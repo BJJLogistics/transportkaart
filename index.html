@@ -21,6 +21,29 @@ button:hover{background:#0868b2}
 .country-label{background:#102d4b;color:white;border:1px solid #359de5;border-radius:5px;padding:5px 7px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 8px #0008}
 .truck-icon{font-size:29px}
 footer{text-align:center;color:#829bb4;font-size:11px;padding:14px}
+.glow-point {
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:#36caff;
+  border:3px solid #ffffff;
+  box-shadow:
+    0 0 8px #36caff,
+    0 0 18px #1685ff,
+    0 0 35px #1685ff;
+  animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,100% {
+    transform:scale(0.85);
+    opacity:0.8;
+  }
+  50% {
+    transform:scale(1.25);
+    opacity:1;
+  }
+}  
 </style>
 </head>
 <body>
@@ -119,10 +142,11 @@ document.getElementById('status').innerText=d.flag+' '+d.name.toUpperCase();
 document.getElementById('details').innerText=
 'DEPARTURE: UTRECHT | DESTINATION: '+d.name.toUpperCase()+' | DISTANCE: '+km+' KM';
 
+
 truck=L.marker(start,{
 icon:L.divIcon({
 className:'truck-icon',
-html:'🚛',
+html:'<div class="glow-point"></div>',
 iconSize:[40,40],
 iconAnchor:[20,20]
 })
