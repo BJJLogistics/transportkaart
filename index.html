@@ -66,8 +66,8 @@ footer{text-align:center;color:#829bb4;font-size:11px;padding:14px}
 <script>
 const map=L.map('map').setView([51.5,10],4);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-attribution:'© OpenStreetMap contributors',
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+attribution:'© OpenStreetMap contributors © CARTO',
 maxZoom:18
 }).addTo(map);
 
