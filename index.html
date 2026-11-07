@@ -162,7 +162,7 @@ function animateTruck(points) {
       a[1] + (b[1] - a[1]) * fraction
     ]);
 
-    progress += 0.025;
+   progress += Math.max(0.5, points.length / 600);
     animation = requestAnimationFrame(move);
   }
 
