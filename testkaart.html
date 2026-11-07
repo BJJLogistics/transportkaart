@@ -57,7 +57,50 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl());
 
 map.on('load', function() {
+
   console.log('European map loaded');
+
+  map.addSource('logistics-hub', {
+    type: 'geojson',
+    data: {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [5.12, 52.09]
+        },
+        properties: {
+          name: 'UTRECHT'
+        }
+      }]
+    }
+  });
+
+  map.addLayer({
+    id: 'hub-glow',
+    type: 'circle',
+    source: 'logistics-hub',
+    paint: {
+      'circle-radius': 15,
+      'circle-color': '#00ff88',
+      'circle-opacity': 0.25,
+      'circle-blur': 1
+    }
+  });
+
+  map.addLayer({
+    id: 'hub-point',
+    type: 'circle',
+    source: 'logistics-hub',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#00ff88',
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2
+    }
+  });
+
 });
 </script>
 
