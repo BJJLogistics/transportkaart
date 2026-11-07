@@ -145,9 +145,11 @@ if(!data.routes||!data.routes.length)throw Error('No route');
 const points=data.routes[0].geometry.coordinates.map(p=>[p[1],p[0]]);
 
 routeLine=L.polyline(points,{
-  color:'#35aaff',
+  color:'#00c8ff',
   weight:5,
-  opacity:0.95
+  opacity:1,
+  lineCap:'round',
+  lineJoin:'round'
 }).addTo(map);
 
 map.fitBounds(routeLine.getBounds(),{padding:[45,45]});
