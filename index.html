@@ -12,7 +12,13 @@ body{margin:0;background:#07182b;color:white;font-family:Arial,sans-serif}
 header{text-align:center;background:#0b2440;padding:24px 12px;border-bottom:2px solid #1685d9}
 header h1{font-size:25px;letter-spacing:2px;margin:0 0 8px}
 header p{color:#a9c9e5;font-size:12px;letter-spacing:2px;margin:0}
-#map{height:75vh;min-height:480px;width:100%;background:#102a43}
+#map{
+ height:75vh;
+ min-height:480px;
+ width:100%;
+ background:#061629;
+ filter:brightness(0.72) contrast(1.25) saturate(0.8);
+}
 .panel{background:#0b2440;padding:22px;text-align:center}
 #status{font-size:20px;font-weight:bold;margin-bottom:9px}
 #details{font-size:14px;color:#b8d2e8}
@@ -131,9 +137,22 @@ if(!data.routes||!data.routes.length)throw Error('No route');
 
 const points=data.routes[0].geometry.coordinates.map(p=>[p[1],p[0]]);
 
-routeLine=L.polyline(points,{
-color:'#35aaff',weight:5,opacity:0.95
-}).addTo(map);
+routeLine=L.layerGroup([
+  L.polyline(points,{
+    color:'#008cff',
+    weight:16,
+    opacity:0.22,
+    lineCap:'round',
+    lineJoin:'round'
+  }),
+  L.polyline(points,{
+    color:'#00c8ff',
+    weight:6,
+    opacity:1,
+    lineCap:'round',
+    lineJoin:'round'
+  })
+]).addTo(map);
 
 map.fitBounds(routeLine.getBounds(),{padding:[45,45]});
 
