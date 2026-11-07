@@ -34,6 +34,7 @@ footer{text-align:center;color:#829bb4;font-size:11px;padding:14px}
 <div class="panel">
 <div id="status">SELECT YOUR DESTINATION</div>
 <div id="details">DEPARTURE: UTRECHT, NETHERLANDS 🇳🇱</div>
+<button onclick="replayRoute()">REPLAY ROUTE</button>
 <button onclick="resetMap()">SHOW ALL DESTINATIONS</button>
 </div>
 <footer>EUROPEAN ROAD TRANSPORT | UTRECHT</footer>
@@ -134,25 +135,49 @@ document.getElementById('details').innerText='Please try another destination lat
 }
 }
 
-function animateTruck(points){
-let progress=0;
-function move(){
-const index=Math.floor(progress);
-const fraction=progress-index;
-if(index>=points.length-1){
-truck.setLatLng(points[points.length-1]);
-document.getElementById('status').innerText+=' | ARRIVED';
-return;
+let lastRoutePoints = [];
+
+function animateTruck(points) {
+  lastRoutePoints = points;
+  let progress = 0;
+
+  if (animation) cancelAnimationFrame(animation);
+
+  function move() {
+    const index = Math.floor(progress);
+    const fraction = progress - index;
+
+    if (index >= points.length - 1) {
+      truck.setLatLng(points[points.length - 1]);
+      document.getElementById('status').innerText += ' | ARRIVED';
+      animation = null;
+      return;
+    }
+
+    const a = points[index];
+    const b = points[index + 1];
+
+    truck.setLatLng([
+      a[0] + (b[0] - a[0]) * fraction,
+      a[1] + (b[1] - a[1]) * fraction
+    ]);
+
+    progress += 0.025;
+    animation = requestAnimationFrame(move);
+  }
+
+  move();
 }
-const a=points[index],b=points[index+1];
-truck.setLatLng([
-a[0]+(b[0]-a[0])*fraction,
-a[1]+(b[1]-a[1])*fraction
-]);
-progress+=0.025;
-animation=requestAnimationFrame(move);
-}
-move();
+
+function replayRoute() {
+  if (!lastRoutePoints.length || !truck) return;
+
+  if (animation) cancelAnimationFrame(animation);
+
+  truck.setLatLng(start);
+  document.getElementById('status').innerText = 'TRUCK ON THE WAY';
+
+  animateTruck(lastRoutePoints);
 }
 
 function resetMap(){
