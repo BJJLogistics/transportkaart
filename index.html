@@ -1,352 +1,168 @@
+
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>European Road Transport</title>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-* {box-sizing:border-box}
-body {
- margin:0;
- background:#07182b;
- color:white;
- font-family:Arial,sans-serif;
-}
-.header {
- background:#0c2744;
- padding:20px;
- text-align:center;
-}
-.header h2 {
- margin:0 0 7px;
- letter-spacing:2px;
-}
-.header p {
- margin:0;
- color:#b4cce4;
- font-size:13px;
-}
-#map {
- height:620px;
- width:100%;
- background:#102a43;
-}
-.panel {
- background:#0c2744;
- padding:17px;
- text-align:center;
-}
-#status {
- font-size:15px;
- margin-bottom:12px;
-}
-button {
- background:#1685d9;
- color:white;
- border:0;
- border-radius:6px;
- padding:11px 18px;
- cursor:pointer;
- margin:4px;
-}
-button:hover {background:#0868b2}
-.country-label {
- background:#102d4b;
- color:white;
- border:1px solid #368acb;
- border-radius:5px;
- padding:5px 8px;
- font-size:12px;
- font-weight:bold;
- white-space:nowrap;
- box-shadow:0 2px 8px #0008;
- cursor:pointer;
-}
-.truck-icon {
- font-size:30px;
- text-align:center;
-}
-.legend {
- color:#b4cce4;
- font-size:12px;
- margin-top:10px;
-}
+*{box-sizing:border-box}
+body{margin:0;background:#07182b;color:white;font-family:Arial,sans-serif}
+header{text-align:center;background:#0b2440;padding:24px 12px;border-bottom:2px solid #1685d9}
+header h1{font-size:25px;letter-spacing:2px;margin:0 0 8px}
+header p{color:#a9c9e5;font-size:12px;letter-spacing:2px;margin:0}
+#map{height:75vh;min-height:480px;width:100%;background:#102a43}
+.panel{background:#0b2440;padding:22px;text-align:center}
+#status{font-size:20px;font-weight:bold;margin-bottom:9px}
+#details{font-size:14px;color:#b8d2e8}
+button{background:#1685d9;color:white;border:0;padding:12px 22px;border-radius:6px;cursor:pointer;font-weight:bold;margin:12px 5px}
+button:hover{background:#0868b2}
+.country-label{background:#102d4b;color:white;border:1px solid #359de5;border-radius:5px;padding:5px 7px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 8px #0008}
+.truck-icon{font-size:29px}
+footer{text-align:center;color:#829bb4;font-size:11px;padding:14px}
 </style>
 </head>
-
 <body>
-
-<div class="header">
- <h2>EUROPE ROAD TRANSPORT</h2>
- <p>International Transport Network | Departure Utrecht</p>
-</div>
+<header>
+<h1>EUROPEAN ROAD TRANSPORT</h1>
+<p>INTERNATIONAL LOGISTICS NETWORK</p>
+</header>
 
 <div id="map"></div>
 
 <div class="panel">
- <div id="status">
- Selecteer een land op de kaart
- </div>
- <button onclick="resetMap()">Toon alle bestemmingen</button>
- <div class="legend">
- 🟢 Vertrek Utrecht &nbsp; 🔵 Geselecteerde bestemming
+<div id="status">SELECT YOUR DESTINATION</div>
+<div id="details">DEPARTURE: UTRECHT, NETHERLANDS 🇳🇱</div>
+<button onclick="resetMap()">SHOW ALL DESTINATIONS</button>
 </div>
-</div>
+<footer>EUROPEAN ROAD TRANSPORT | UTRECHT</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
+const map=L.map('map').setView([51.5,10],4);
 
-// KAART
-const map = L.map('map').setView([51.5,10],4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'© OpenStreetMap contributors',
+maxZoom:18
+}).addTo(map);
 
-L.tileLayer(
- 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
- {
-  attribution:'© OpenStreetMap contributors',
-  maxZoom:18
- }
-).addTo(map);
+const start=[52.0907,5.1214];
 
-// VERTREKPUNT UTRECHT
-const start = [52.0907,5.1214];
+L.circleMarker(start,{
+radius:10,color:'#fff',fillColor:'#16c784',fillOpacity:1,weight:2
+}).addTo(map).bindPopup('<b>DEPARTURE</b><br>Utrecht, Netherlands 🇳🇱');
 
-const origin = L.circleMarker(start,{
- radius:9,
- color:'#ffffff',
- fillColor:'#19bd78',
- fillOpacity:1,
- weight:2
-}).addTo(map).bindPopup(
- '<b>VERTREK</b><br>Utrecht – Nederland'
-);
-
-// BESTEMMINGEN
-// Coördinaten zijn representatieve eindpunten
-// in de betreffende landen.
-
-const destinations = [
- {name:"België",flag:"🇧🇪",code:"Belgium",coords:[50.8503,4.3517]},
- {name:"Duitsland",flag:"🇩🇪",code:"Germany",coords:[52.5200,13.4050]},
- {name:"Frankrijk",flag:"🇫🇷",code:"France",coords:[48.8566,2.3522]},
- {name:"Spanje",flag:"🇪🇸",code:"Spain",coords:[40.4168,-3.7038]},
- {name:"Italië",flag:"🇮🇹",code:"Italy",coords:[41.9028,12.4964]},
- {name:"Oostenrijk",flag:"🇦🇹",code:"Austria",coords:[48.2082,16.3738]},
- {name:"Polen",flag:"🇵🇱",code:"Poland",coords:[52.2297,21.0122]},
- {name:"Tsjechië",flag:"🇨🇿",code:"Czechia",coords:[50.0755,14.4378]},
- {name:"Denemarken",flag:"🇩🇰",code:"Denmark",coords:[55.6761,12.5683]},
- {name:"Zweden",flag:"🇸🇪",code:"Sweden",coords:[59.3293,18.0686]},
- {name:"Noorwegen",flag:"🇳🇴",code:"Norway",coords:[59.9139,10.7522]},
- {name:"Zwitserland",flag:"🇨🇭",code:"Switzerland",coords:[46.9480,7.4474]},
- {name:"Bulgarije",flag:"🇧🇬",code:"Bulgaria",coords:[42.6977,23.3219]},
- {name:"Roemenië",flag:"🇷🇴",code:"Romania",coords:[44.4268,26.1025]},
- {name:"Hongarije",flag:"🇭🇺",code:"Hungary",coords:[47.4979,19.0402]}
+const destinations=[
+{name:"Belgium",flag:"🇧🇪",coords:[50.8503,4.3517]},
+{name:"Germany",flag:"🇩🇪",coords:[52.52,13.405]},
+{name:"France",flag:"🇫🇷",coords:[48.8566,2.3522]},
+{name:"Spain",flag:"🇪🇸",coords:[40.4168,-3.7038]},
+{name:"Italy",flag:"🇮🇹",coords:[41.9028,12.4964]},
+{name:"Austria",flag:"🇦🇹",coords:[48.2082,16.3738]},
+{name:"Poland",flag:"🇵🇱",coords:[52.2297,21.0122]},
+{name:"Czech Republic",flag:"🇨🇿",coords:[50.0755,14.4378]},
+{name:"Denmark",flag:"🇩🇰",coords:[55.6761,12.5683]},
+{name:"Sweden",flag:"🇸🇪",coords:[59.3293,18.0686]},
+{name:"Norway",flag:"🇳🇴",coords:[59.9139,10.7522]},
+{name:"Switzerland",flag:"🇨🇭",coords:[46.948,7.4474]},
+{name:"Bulgaria",flag:"🇧🇬",coords:[42.6977,23.3219]},
+{name:"Romania",flag:"🇷🇴",coords:[44.4268,26.1025]},
+{name:"Hungary",flag:"🇭🇺",coords:[47.4979,19.0402]}
 ];
 
-let selectedLayer=null;
 let routeLine=null;
 let truck=null;
 let animation=null;
-let countryLayers=[];
+let markers=[];
 
-// LANDENKAART LADEN
-fetch(
- 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson'
-)
-.then(response=>response.json())
-.then(data=>{
- const countryGroup=L.geoJSON(data,{
-  filter:feature=>{
-   const country=feature.properties.ADMIN ||
-                 feature.properties.name;
-   return destinations.some(d=>d.code===country);
-  },
-  style:{
-   color:'#527b9f',
-   weight:1,
-   fillColor:'#163b5b',
-   fillOpacity:0.7
-  },
-  onEachFeature:(feature,layer)=>{
-   const country=feature.properties.ADMIN ||
-                 feature.properties.name;
-   const destination=destinations.find(
-    d=>d.code===country
-   );
-   if(!destination)return;
-
-   layer.on('click',()=>showRoute(destination));
-   layer.bindTooltip(destination.name,{
-    sticky:true
-   });
-   countryLayers.push({layer,destination});
-  }
- }).addTo(map);
-
- // LANDNAMEN EN VLAGGEN
- destinations.forEach(destination=>{
-  const label=L.marker(destination.coords,{
-   icon:L.divIcon({
-    className:'',
-    html:'<div class="country-label">'+
-         destination.flag+' '+
-         destination.name+'</div>',
-    iconSize:null,
-    iconAnchor:[0,0]
-   })
-  }).addTo(map);
-
-  label.on('click',()=>{
-   showRoute(destination);
-  });
- });
+destinations.forEach(d=>{
+const marker=L.marker(d.coords,{
+icon:L.divIcon({
+className:'',
+html:'<div class="country-label">'+d.flag+' '+d.name+'</div>',
+iconSize:null,iconAnchor:[0,0]
 })
-.catch(error=>{
- document.getElementById('status').innerText=
- 'De landenkaart kon niet worden geladen.';
+}).addTo(map);
+marker.on('click',()=>showRoute(d));
+markers.push(marker);
 });
 
-// ROUTE TONEN
-async function showRoute(destination){
+async function showRoute(d){
+if(animation)cancelAnimationFrame(animation);
+if(routeLine)map.removeLayer(routeLine);
+if(truck)map.removeLayer(truck);
 
- if(animation)cancelAnimationFrame(animation);
- if(routeLine)map.removeLayer(routeLine);
- if(truck)map.removeLayer(truck);
+document.getElementById('status').innerText='LOADING ROUTE...';
+document.getElementById('details').innerText='UTRECHT → '+d.name.toUpperCase();
 
- if(selectedLayer){
-  selectedLayer.setStyle({
-   fillColor:'#163b5b',
-   fillOpacity:0.7,
-   color:'#527b9f'
-  });
- }
+try{
+const url='https://router.project-osrm.org/route/v1/driving/'+
+start[1]+','+start[0]+';'+d.coords[1]+','+d.coords[0]+
+'?overview=full&geometries=geojson';
 
- const selected=countryLayers.find(
-  item=>item.destination.name===destination.name
- );
+const response=await fetch(url);
+const data=await response.json();
+if(!data.routes||!data.routes.length)throw Error('No route');
 
- if(selected){
-  selectedLayer=selected.layer;
-  selectedLayer.setStyle({
-   fillColor:'#1685d9',
-   fillOpacity:0.9,
-   color:'#69c4ff',
-   weight:2
-  });
- }
+const points=data.routes[0].geometry.coordinates.map(p=>[p[1],p[0]]);
 
- document.getElementById('status').innerText=
- 'Route naar '+destination.name+' wordt berekend...';
+routeLine=L.polyline(points,{
+color:'#35aaff',weight:5,opacity:0.95
+}).addTo(map);
 
- try{
-  const url=
-  'https://router.project-osrm.org/route/v1/driving/'+
-  start[1]+','+start[0]+';'+
-  destination.coords[1]+','+destination.coords[0]+
-  '?overview=full&geometries=geojson';
+map.fitBounds(routeLine.getBounds(),{padding:[45,45]});
 
-  const response=await fetch(url);
-  const data=await response.json();
+const km=Math.round(data.routes[0].distance/1000);
+document.getElementById('status').innerText=d.flag+' '+d.name.toUpperCase();
+document.getElementById('details').innerText=
+'DEPARTURE: UTRECHT | DESTINATION: '+d.name.toUpperCase()+' | DISTANCE: '+km+' KM';
 
-  if(!data.routes || !data.routes.length){
-   throw new Error('Geen route beschikbaar');
-  }
+truck=L.marker(start,{
+icon:L.divIcon({
+className:'truck-icon',
+html:'🚛',
+iconSize:[40,40],
+iconAnchor:[20,20]
+})
+}).addTo(map);
 
-  const points=data.routes[0].geometry.coordinates
-   .map(p=>[p[1],p[0]]);
-
-  routeLine=L.polyline(points,{
-   color:'#35aaff',
-   weight:5,
-   opacity:0.95
-  }).addTo(map);
-
-  map.fitBounds(routeLine.getBounds(),{
-   padding:[40,40]
-  });
-
-  const km=Math.round(data.routes[0].distance/1000);
-
-  document.getElementById('status').innerText=
-   '🚛 Utrecht → '+destination.flag+' '+
-   destination.name+' | '+km+' km';
-
-  truck=L.marker(start,{
-   icon:L.divIcon({
-    className:'truck-icon',
-    html:'🚛',
-    iconSize:[40,40],
-    iconAnchor:[20,20]
-   })
-  }).addTo(map);
-
-  animateTruck(points);
-
- }catch(error){
-  document.getElementById('status').innerText=
-   'Route niet beschikbaar. Probeer opnieuw.';
- }
+animateTruck(points);
+}catch(error){
+document.getElementById('status').innerText='ROUTE NOT AVAILABLE';
+document.getElementById('details').innerText='Please try another destination later.';
+}
 }
 
-// VRACHTWAGEN ANIMEREN
 function animateTruck(points){
- let progress=0;
- const speed=0.035;
-
- function move(){
-  const index=Math.floor(progress);
-  const fraction=progress-index;
-
-  if(index>=points.length-1){
-   truck.setLatLng(points[points.length-1]);
-   document.getElementById('status').innerText+=
-    ' | Bestemming bereikt';
-   return;
-  }
-
-  const a=points[index];
-  const b=points[index+1];
-
-  const position=[
-   a[0]+(b[0]-a[0])*fraction,
-   a[1]+(b[1]-a[1])*fraction
-  ];
-
-  truck.setLatLng(position);
-  progress+=speed;
-
-  animation=requestAnimationFrame(move);
- }
-
- move();
+let progress=0;
+function move(){
+const index=Math.floor(progress);
+const fraction=progress-index;
+if(index>=points.length-1){
+truck.setLatLng(points[points.length-1]);
+document.getElementById('status').innerText+=' | ARRIVED';
+return;
+}
+const a=points[index],b=points[index+1];
+truck.setLatLng([
+a[0]+(b[0]-a[0])*fraction,
+a[1]+(b[1]-a[1])*fraction
+]);
+progress+=0.025;
+animation=requestAnimationFrame(move);
+}
+move();
 }
 
-// RESET
 function resetMap(){
- if(animation)cancelAnimationFrame(animation);
- if(routeLine)map.removeLayer(routeLine);
- if(truck)map.removeLayer(truck);
-
- if(selectedLayer){
-  selectedLayer.setStyle({
-   fillColor:'#163b5b',
-   fillOpacity:0.7,
-   color:'#527b9f',
-   weight:1
-  });
- }
-
- selectedLayer=null;
- map.setView([51.5,10],4);
-
- document.getElementById('status').innerText=
- 'Selecteer een land op de kaart';
+if(animation)cancelAnimationFrame(animation);
+if(routeLine)map.removeLayer(routeLine);
+if(truck)map.removeLayer(truck);
+map.setView([51.5,10],4);
+document.getElementById('status').innerText='SELECT YOUR DESTINATION';
+document.getElementById('details').innerText='DEPARTURE: UTRECHT, NETHERLANDS 🇳🇱';
 }
-
 </script>
 </body>
 </html>
