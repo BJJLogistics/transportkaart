@@ -25,7 +25,7 @@ header {
 
 h2 {
   margin: 0;
-  color: #00c8ff;
+  color: #00cfff;
   letter-spacing: 2px;
 }
 
@@ -103,9 +103,9 @@ map.on('load', function() {
     type: 'circle',
     source: 'hub',
     paint: {
-      'circle-radius': 16,
-      'circle-color': '#00ff88',
-      'circle-opacity': 0.3,
+      'circle-radius': 19,
+      'circle-color': '#00cfff',
+      'circle-opacity': 0.4,
       'circle-blur': 1
     }
   });
@@ -116,7 +116,7 @@ map.on('load', function() {
     source: 'hub',
     paint: {
       'circle-radius': 7,
-      'circle-color': '#00ff88',
+      'circle-color': '#00cfff',
       'circle-stroke-color': '#ffffff',
       'circle-stroke-width': 2
     }
@@ -142,14 +142,26 @@ map.on('load', function() {
   });
 
   map.addLayer({
+    id: 'city-glow',
+    type: 'circle',
+    source: 'cities',
+    paint: {
+      'circle-radius': 10,
+      'circle-color': '#00cfff',
+      'circle-opacity': 0.3,
+      'circle-blur': 1
+    }
+  });
+
+  map.addLayer({
     id: 'city-points',
     type: 'circle',
     source: 'cities',
     paint: {
-      'circle-radius': 5,
-      'circle-color': '#00c8ff',
+      'circle-radius': 4,
+      'circle-color': '#00cfff',
       'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1.5
+      'circle-stroke-width': 1
     }
   });
 
@@ -170,7 +182,7 @@ map.on('load', function() {
     }
   });
 
-  // ROUTE LINE
+  // ROAD ROUTE
 
   map.addSource('route', {
     type: 'geojson',
@@ -184,17 +196,29 @@ map.on('load', function() {
   });
 
   map.addLayer({
+    id: 'route-glow',
+    type: 'line',
+    source: 'route',
+    paint: {
+      'line-color': '#00bfff',
+      'line-width': 12,
+      'line-opacity': 0.35,
+      'line-blur': 5
+    }
+  });
+
+  map.addLayer({
     id: 'route-line',
     type: 'line',
     source: 'route',
     paint: {
-      'line-color': '#00c8ff',
+      'line-color': '#00dfff',
       'line-width': 3,
-      'line-opacity': 0.9
+      'line-opacity': 1
     }
   });
 
-  // MOVING TRANSPORT DOT
+  // MOVING NEON BLUE DOT
 
   map.addSource('moving-dot', {
     type: 'geojson',
@@ -212,9 +236,9 @@ map.on('load', function() {
     type: 'circle',
     source: 'moving-dot',
     paint: {
-      'circle-radius': 12,
-      'circle-color': '#00ff88',
-      'circle-opacity': 0.3,
+      'circle-radius': 17,
+      'circle-color': '#00bfff',
+      'circle-opacity': 0.5,
       'circle-blur': 1
     }
   });
@@ -225,13 +249,13 @@ map.on('load', function() {
     source: 'moving-dot',
     paint: {
       'circle-radius': 6,
-      'circle-color': '#00ff88',
+      'circle-color': '#00dfff',
       'circle-stroke-color': '#ffffff',
       'circle-stroke-width': 2
     }
   });
 
-  // RANDOM CITY SELECTION
+  // RANDOM CITY
 
   let lastCity = -1;
 
@@ -246,20 +270,75 @@ map.on('load', function() {
     return cities[index];
   }
 
-  // ANIMATION
+  // GET REAL ROAD ROUTE FROM OSRM
 
-  function animateLeg(start, end, callback) {
+  async function getRoadRoute(start, end) {
 
-    const duration = 5000;
+    const url =
+      'https://router.project-osrm.org/route/v1/driving/' +
+      start[0] + ',' + start[1] + ';' +
+      end[0] + ',' + end[1] +
+      '?overview=full&geometries=geojson&steps=false';
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error('Route server error');
+    }
+
+    const data = await response.json();
+
+    if (data.code !== 'Ok' || !data.routes.length) {
+      throw new Error('No road route found');
+    }
+
+    return data.routes[0].geometry.coordinates;
+  }
+
+  // DISTANCE BETWEEN ROAD POINTS
+
+  function distance(a, b) {
+
+    const rad = Math.PI / 180;
+
+    const lat1 = a[1] * rad;
+    const lat2 = b[1] * rad;
+
+    const dLat = (b[1] - a[1]) * rad;
+    const dLng = (b[0] - a[0]) * rad;
+
+    const x = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) *
+      Math.sin(dLng / 2) ** 2;
+
+    return 6371000 * 2 *
+      Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+
+  // ANIMATE ALONG REAL ROAD
+
+  function animateRoad(coordinates, callback) {
+
+    const lengths = [];
+    let totalDistance = 0;
+
+    for (let i = 1; i < coordinates.length; i++) {
+      const segment = distance(
+        coordinates[i - 1],
+        coordinates[i]
+      );
+
+      lengths.push(segment);
+      totalDistance += segment;
+    }
+
+    if (totalDistance === 0) {
+      callback();
+      return;
+    }
+
+    const duration = 10000;
     const startTime = performance.now();
-
-    map.getSource('route').setData({
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: [start, end]
-      }
-    });
 
     function frame(now) {
 
@@ -267,17 +346,37 @@ map.on('load', function() {
         (now - startTime) / duration, 1
       );
 
-      const lng = start[0] +
-        (end[0] - start[0]) * progress;
+      const travelled = totalDistance * progress;
 
-      const lat = start[1] +
-        (end[1] - start[1]) * progress;
+      let currentDistance = 0;
+      let position = coordinates[coordinates.length - 1];
+
+      for (let i = 0; i < lengths.length; i++) {
+
+        if (currentDistance + lengths[i] >= travelled) {
+
+          const fraction =
+            (travelled - currentDistance) / lengths[i];
+
+          const a = coordinates[i];
+          const b = coordinates[i + 1];
+
+          position = [
+            a[0] + (b[0] - a[0]) * fraction,
+            a[1] + (b[1] - a[1]) * fraction
+          ];
+
+          break;
+        }
+
+        currentDistance += lengths[i];
+      }
 
       map.getSource('moving-dot').setData({
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: [lng, lat]
+          coordinates: position
         }
       });
 
@@ -291,41 +390,78 @@ map.on('load', function() {
     requestAnimationFrame(frame);
   }
 
-  // REPEATING TRANSPORT JOURNEY
+  // TRANSPORT JOURNEY
 
-  function startJourney() {
+  async function startJourney() {
 
     const city = chooseCity();
     const destination = [city[1], city[2]];
 
-    console.log('Vertrek naar: ' + city[0]);
+    console.log('Route naar: ' + city[0]);
 
-    // Utrecht to destination
+    try {
 
-    animateLeg(HUB, destination, function() {
+      // GET ROAD ROUTE
 
-      console.log('Aangekomen in: ' + city[0]);
+      const road = await getRoadRoute(HUB, destination);
 
-      // Short stop at destination
+      console.log('Echte autoroute geladen');
 
-      setTimeout(function() {
+      // SHOW OUTBOUND ROUTE
 
-        // Return to Utrecht
+      map.getSource('route').setData({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: road
+        }
+      });
 
-        animateLeg(destination, HUB, function() {
+      // TRAVEL TO CITY
 
-          console.log('Terug in Utrecht');
+      animateRoad(road, function() {
 
-          setTimeout(startJourney, 1000);
+        console.log('Aangekomen in: ' + city[0]);
 
-        });
+        setTimeout(function() {
 
-      }, 1000);
+          // RETURN ROAD ROUTE
 
-    });
+          const returnRoad = [...road].reverse();
+
+          map.getSource('route').setData({
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: returnRoad
+            }
+          });
+
+          // TRAVEL BACK TO UTRECHT
+
+          animateRoad(returnRoad, function() {
+
+            console.log('Terug in Utrecht');
+
+            setTimeout(startJourney, 1500);
+
+          });
+
+        }, 1500);
+
+      });
+
+    } catch (error) {
+
+      console.error('Route fout:', error);
+
+      console.log('Nieuwe poging over 10 seconden');
+
+      setTimeout(startJourney, 10000);
+    }
   }
 
-  console.log('European transport network loaded');
+  console.log('European Road Transport gestart');
 
   startJourney();
 
