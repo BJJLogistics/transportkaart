@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,44 +47,65 @@ h2 {
 <div id="map"></div>
 
 <script>
+
+const HUB = [5.12, 52.09];
+
+const cities = [
+  ['London',-0.1276,51.5072],
+  ['Paris',2.3522,48.8566],
+  ['Brussels',4.3517,50.8503],
+  ['Amsterdam',4.9041,52.3676],
+  ['Berlin',13.405,52.52],
+  ['Hamburg',9.9937,53.5511],
+  ['Frankfurt',8.6821,50.1109],
+  ['Madrid',-3.7038,40.4168],
+  ['Barcelona',2.1734,41.3851],
+  ['Lisbon',-9.1393,38.7223],
+  ['Milan',9.19,45.4642],
+  ['Rome',12.4964,41.9028],
+  ['Vienna',16.3738,48.2082],
+  ['Warsaw',21.0122,52.2297],
+  ['Prague',14.4378,50.0755],
+  ['Copenhagen',12.5683,55.6761],
+  ['Stockholm',18.0686,59.3293],
+  ['Bucharest',26.1025,44.4268],
+  ['Sofia',23.3219,42.6977],
+  ['Athens',23.7275,37.9838],
+  ['Istanbul',28.9784,41.0082]
+];
+
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/fiord',
-  center: [5.1, 52.1],
-  zoom: 4
+  center: [10, 51.5],
+  zoom: 3.7
 });
 
 map.addControl(new maplibregl.NavigationControl());
 
 map.on('load', function() {
 
-  console.log('European map loaded');
+  // UTRECHT HUB
 
-  map.addSource('logistics-hub', {
+  map.addSource('hub', {
     type: 'geojson',
     data: {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [5.12, 52.09]
-        },
-        properties: {
-          name: 'UTRECHT'
-        }
-      }]
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: HUB
+      }
     }
   });
 
   map.addLayer({
     id: 'hub-glow',
     type: 'circle',
-    source: 'logistics-hub',
+    source: 'hub',
     paint: {
-      'circle-radius': 15,
+      'circle-radius': 16,
       'circle-color': '#00ff88',
-      'circle-opacity': 0.25,
+      'circle-opacity': 0.3,
       'circle-blur': 1
     }
   });
@@ -92,41 +113,22 @@ map.on('load', function() {
   map.addLayer({
     id: 'hub-point',
     type: 'circle',
-    source: 'logistics-hub',
+    source: 'hub',
     paint: {
-      'circle-radius': 6,
+      'circle-radius': 7,
       'circle-color': '#00ff88',
       'circle-stroke-color': '#ffffff',
       'circle-stroke-width': 2
     }
   });
-   map.addSource('european-cities', {
+
+  // EUROPEAN CITIES
+
+  map.addSource('cities', {
     type: 'geojson',
     data: {
       type: 'FeatureCollection',
-      features: [
-        ['London',-0.1276,51.5072],
-        ['Paris',2.3522,48.8566],
-        ['Brussels',4.3517,50.8503],
-        ['Amsterdam',4.9041,52.3676],
-        ['Berlin',13.405,52.52],
-        ['Hamburg',9.9937,53.5511],
-        ['Frankfurt',8.6821,50.1109],
-        ['Madrid',-3.7038,40.4168],
-        ['Barcelona',2.1734,41.3851],
-        ['Lisbon',-9.1393,38.7223],
-        ['Milan',9.19,45.4642],
-        ['Rome',12.4964,41.9028],
-        ['Vienna',16.3738,48.2082],
-        ['Warsaw',21.0122,52.2297],
-        ['Prague',14.4378,50.0755],
-        ['Copenhagen',12.5683,55.6761],
-        ['Stockholm',18.0686,59.3293],
-        ['Bucharest',26.1025,44.4268],
-        ['Sofia',23.3219,42.6977],
-        ['Athens',23.7275,37.9838],
-        ['Istanbul',28.9784,41.0082]
-      ].map(city => ({
+      features: cities.map(city => ({
         type: 'Feature',
         geometry: {
           type: 'Point',
@@ -142,50 +144,193 @@ map.on('load', function() {
   map.addLayer({
     id: 'city-points',
     type: 'circle',
-    source: 'european-cities',
-     paint: {
-      'circle-radius': 6,
+    source: 'cities',
+    paint: {
+      'circle-radius': 5,
       'circle-color': '#00c8ff',
-      'circle-opacity': 1,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 1.5
+    }
+  });
+
+  map.addLayer({
+    id: 'city-labels',
+    type: 'symbol',
+    source: 'cities',
+    layout: {
+      'text-field': ['get', 'name'],
+      'text-size': 11,
+      'text-offset': [0, 1],
+      'text-anchor': 'top'
+    },
+    paint: {
+      'text-color': '#ffffff',
+      'text-halo-color': '#061629',
+      'text-halo-width': 2
+    }
+  });
+
+  // ROUTE LINE
+
+  map.addSource('route', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [HUB, HUB]
+      }
+    }
+  });
+
+  map.addLayer({
+    id: 'route-line',
+    type: 'line',
+    source: 'route',
+    paint: {
+      'line-color': '#00c8ff',
+      'line-width': 3,
+      'line-opacity': 0.9
+    }
+  });
+
+  // MOVING TRANSPORT DOT
+
+  map.addSource('moving-dot', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: HUB
+      }
+    }
+  });
+
+  map.addLayer({
+    id: 'moving-dot-glow',
+    type: 'circle',
+    source: 'moving-dot',
+    paint: {
+      'circle-radius': 12,
+      'circle-color': '#00ff88',
+      'circle-opacity': 0.3,
+      'circle-blur': 1
+    }
+  });
+
+  map.addLayer({
+    id: 'moving-dot-point',
+    type: 'circle',
+    source: 'moving-dot',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#00ff88',
       'circle-stroke-color': '#ffffff',
       'circle-stroke-width': 2
     }
   });
-  map.addLayer({
-    id: 'city-labels',
-    type: 'symbol',
-    source: 'european-cities',
-    layout: {
-      'text-field': ['get', 'name'],
-      'text-size': 12,
-      'text-offset': [0, 1],
-      'text-anchor': 'top'
-    },
-    paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#061629',
-      'text-halo-width': 2
-    }
-  });
 
-  map.addLayer({
-    id: 'city-labels',
-    type: 'symbol',
-    source: 'european-cities',
-    layout: {
-      'text-field': ['get', 'name'],
-      'text-size': 12,
-      'text-offset': [0, 1],
-      'text-anchor': 'top'
-    },
-    paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#061629',
-      'text-halo-width': 2
+  // RANDOM CITY SELECTION
+
+  let lastCity = -1;
+
+  function chooseCity() {
+    let index;
+
+    do {
+      index = Math.floor(Math.random() * cities.length);
+    } while (index === lastCity);
+
+    lastCity = index;
+    return cities[index];
+  }
+
+  // ANIMATION
+
+  function animateLeg(start, end, callback) {
+
+    const duration = 5000;
+    const startTime = performance.now();
+
+    map.getSource('route').setData({
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [start, end]
+      }
+    });
+
+    function frame(now) {
+
+      const progress = Math.min(
+        (now - startTime) / duration, 1
+      );
+
+      const lng = start[0] +
+        (end[0] - start[0]) * progress;
+
+      const lat = start[1] +
+        (end[1] - start[1]) * progress;
+
+      map.getSource('moving-dot').setData({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        }
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        callback();
+      }
     }
-  });
+
+    requestAnimationFrame(frame);
+  }
+
+  // REPEATING TRANSPORT JOURNEY
+
+  function startJourney() {
+
+    const city = chooseCity();
+    const destination = [city[1], city[2]];
+
+    console.log('Vertrek naar: ' + city[0]);
+
+    // Utrecht to destination
+
+    animateLeg(HUB, destination, function() {
+
+      console.log('Aangekomen in: ' + city[0]);
+
+      // Short stop at destination
+
+      setTimeout(function() {
+
+        // Return to Utrecht
+
+        animateLeg(destination, HUB, function() {
+
+          console.log('Terug in Utrecht');
+
+          setTimeout(startJourney, 1000);
+
+        });
+
+      }, 1000);
+
+    });
+  }
+
+  console.log('European transport network loaded');
+
+  startJourney();
 
 });
+
 </script>
 
 </body>
