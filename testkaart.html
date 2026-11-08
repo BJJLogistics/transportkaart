@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>European Road Transport</title>
+<title>European Road Transport - JBJ</title>
 
 <link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
@@ -33,6 +33,64 @@ h2 {
   width: 100%;
   height: 75vh;
   background: #061629;
+}
+
+/* Moving JBJ vehicle */
+
+.jbj-marker {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 3px solid #00dfff;
+  box-shadow:
+    0 0 10px #00dfff,
+    0 0 25px #00bfff,
+    0 0 40px rgba(0, 191, 255, 0.7);
+  background: #061629;
+  box-sizing: border-box;
+}
+
+.flag {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.flag-white {
+  flex: 1;
+  background: #ffffff;
+}
+
+.flag-green {
+  flex: 1;
+  background: #168b45;
+}
+
+.flag-red {
+  flex: 1;
+  background: #d62632;
+}
+
+.jbj-text {
+  position: absolute;
+  z-index: 2;
+  color: white;
+  background: rgba(3, 17, 30, 0.88);
+  font-weight: bold;
+  font-size: 15px;
+  letter-spacing: 1px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  text-shadow: 0 0 5px #00dfff;
 }
 </style>
 </head>
@@ -85,7 +143,7 @@ map.addControl(new maplibregl.NavigationControl());
 
 map.on('load', function() {
 
-  // UTRECHT HUB
+  // UTRECHT HUB - RED NEON
 
   map.addSource('hub', {
     type: 'geojson',
@@ -103,9 +161,9 @@ map.on('load', function() {
     type: 'circle',
     source: 'hub',
     paint: {
-      'circle-radius': 19,
-      'circle-color': '#00cfff',
-      'circle-opacity': 0.4,
+      'circle-radius': 25,
+      'circle-color': '#ff2020',
+      'circle-opacity': 0.35,
       'circle-blur': 1
     }
   });
@@ -115,14 +173,14 @@ map.on('load', function() {
     type: 'circle',
     source: 'hub',
     paint: {
-      'circle-radius': 7,
-      'circle-color': '#00cfff',
+      'circle-radius': 12,
+      'circle-color': '#ff2020',
       'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 2
+      'circle-stroke-width': 3
     }
   });
 
-  // EUROPEAN CITIES
+  // CITIES
 
   map.addSource('cities', {
     type: 'geojson',
@@ -182,7 +240,7 @@ map.on('load', function() {
     }
   });
 
-  // ROAD ROUTE
+  // ROUTE SOURCE
 
   map.addSource('route', {
     type: 'geojson',
@@ -218,42 +276,26 @@ map.on('load', function() {
     }
   });
 
-  // MOVING NEON BLUE DOT
+  // JBJ MOVING MARKER
 
-  map.addSource('moving-dot', {
-    type: 'geojson',
-    data: {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: HUB
-      }
-    }
-  });
+  const markerElement = document.createElement('div');
+  markerElement.className = 'jbj-marker';
 
-  map.addLayer({
-    id: 'moving-dot-glow',
-    type: 'circle',
-    source: 'moving-dot',
-    paint: {
-      'circle-radius': 17,
-      'circle-color': '#00bfff',
-      'circle-opacity': 0.5,
-      'circle-blur': 1
-    }
-  });
+  markerElement.innerHTML = `
+    <div class="flag">
+      <div class="flag-white"></div>
+      <div class="flag-green"></div>
+      <div class="flag-red"></div>
+    </div>
+    <div class="jbj-text">JBJ</div>
+  `;
 
-  map.addLayer({
-    id: 'moving-dot-point',
-    type: 'circle',
-    source: 'moving-dot',
-    paint: {
-      'circle-radius': 6,
-      'circle-color': '#00dfff',
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 2
-    }
-  });
+  const jbjMarker = new maplibregl.Marker({
+    element: markerElement,
+    anchor: 'center'
+  })
+  .setLngLat(HUB)
+  .addTo(map);
 
   // RANDOM CITY
 
@@ -270,7 +312,7 @@ map.on('load', function() {
     return cities[index];
   }
 
-  // GET REAL ROAD ROUTE FROM OSRM
+  // ROAD ROUTE FROM OSRM
 
   async function getRoadRoute(start, end) {
 
@@ -295,7 +337,7 @@ map.on('load', function() {
     return data.routes[0].geometry.coordinates;
   }
 
-  // DISTANCE BETWEEN ROAD POINTS
+  // DISTANCE
 
   function distance(a, b) {
 
@@ -315,7 +357,7 @@ map.on('load', function() {
       Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
   }
 
-  // ANIMATE ALONG REAL ROAD
+  // MOVE ALONG ROAD
 
   function animateRoad(coordinates, callback) {
 
@@ -323,6 +365,7 @@ map.on('load', function() {
     let totalDistance = 0;
 
     for (let i = 1; i < coordinates.length; i++) {
+
       const segment = distance(
         coordinates[i - 1],
         coordinates[i]
@@ -372,13 +415,7 @@ map.on('load', function() {
         currentDistance += lengths[i];
       }
 
-      map.getSource('moving-dot').setData({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: position
-        }
-      });
+      jbjMarker.setLngLat(position);
 
       if (progress < 1) {
         requestAnimationFrame(frame);
@@ -390,7 +427,7 @@ map.on('load', function() {
     requestAnimationFrame(frame);
   }
 
-  // TRANSPORT JOURNEY
+  // JOURNEY
 
   async function startJourney() {
 
@@ -401,13 +438,7 @@ map.on('load', function() {
 
     try {
 
-      // GET ROAD ROUTE
-
       const road = await getRoadRoute(HUB, destination);
-
-      console.log('Echte autoroute geladen');
-
-      // SHOW OUTBOUND ROUTE
 
       map.getSource('route').setData({
         type: 'Feature',
@@ -417,15 +448,11 @@ map.on('load', function() {
         }
       });
 
-      // TRAVEL TO CITY
-
       animateRoad(road, function() {
 
         console.log('Aangekomen in: ' + city[0]);
 
         setTimeout(function() {
-
-          // RETURN ROAD ROUTE
 
           const returnRoad = [...road].reverse();
 
@@ -436,8 +463,6 @@ map.on('load', function() {
               coordinates: returnRoad
             }
           });
-
-          // TRAVEL BACK TO UTRECHT
 
           animateRoad(returnRoad, function() {
 
@@ -455,13 +480,11 @@ map.on('load', function() {
 
       console.error('Route fout:', error);
 
-      console.log('Nieuwe poging over 10 seconden');
-
       setTimeout(startJourney, 10000);
     }
   }
 
-  console.log('European Road Transport gestart');
+  console.log('JBJ European Road Transport gestart');
 
   startJourney();
 
