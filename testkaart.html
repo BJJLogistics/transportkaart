@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JBJ European Road Transport</title>
 
-  <link
-    href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css"
-    rel="stylesheet"
-  />
+  <link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
 
   <style>
@@ -27,18 +24,18 @@
       height: 100%;
     }
 
-    /* Compact bewegend JBJ-bolletje */
+    /* Klein bewegend JBJ-bolletje */
     .jbj-marker {
-      width: 42px;
-      height: 42px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       position: relative;
       overflow: hidden;
-      border: 2px solid #00dfff;
+      border: 1.5px solid #00dfff;
       box-sizing: border-box;
       box-shadow:
-        0 0 8px #00dfff,
-        0 0 17px rgba(0, 191, 255, 0.65);
+        0 0 5px #00dfff,
+        0 0 11px rgba(0, 191, 255, 0.65);
       background: #061629;
     }
 
@@ -52,7 +49,7 @@
 
     .flag-white {
       flex: 1;
-      background: white;
+      background: #ffffff;
     }
 
     .flag-green {
@@ -65,22 +62,22 @@
       background: #d62612;
     }
 
-    /* Klein zwart vlak met JBJ */
+    /* Compact zwart vlak met JBJ */
     .jbj-text {
       position: absolute;
       z-index: 2;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      color: white;
-      background: rgba(0, 0, 0, 0.92);
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.94);
       font-weight: bold;
-      font-size: 10px;
-      letter-spacing: 0.3px;
-      padding: 2px 4px;
-      border-radius: 3px;
+      font-size: 9px;
+      letter-spacing: 0;
+      padding: 2px 3px;
+      border-radius: 2px;
       white-space: nowrap;
-      text-shadow: 0 0 3px #00dfff;
+      text-shadow: 0 0 2px #00dfff;
     }
   </style>
 </head>
@@ -151,8 +148,7 @@
         'circle-radius': 4,
         'circle-color': '#00eaff',
         'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 1,
-        'circle-blur': 0.15
+        'circle-stroke-width': 1
       }
     });
 
@@ -173,7 +169,7 @@
       }
     });
 
-    /* Utrecht: kleinere rode hub */
+    /* Utrecht: duidelijk rood vertrekpunt */
     map.addSource('utrecht-hub', {
       type: 'geojson',
       data: {
@@ -191,24 +187,24 @@
       type: 'circle',
       source: 'utrecht-hub',
       paint: {
-        'circle-radius': 15,
-        'circle-color': '#ff2020',
-        'circle-opacity': 0.22,
-        'circle-blur': 0.8
+        'circle-radius': 23,
+        'circle-color': '#ff0000',
+        'circle-opacity': 0.35,
+        'circle-blur': 0.5
       }
     });
 
     map.addLayer({
-  id: 'utrecht-point',
-  type: 'circle',
-  source: 'utrecht-hub',
-  paint: {
-    'circle-radius': 8,
-    'circle-color': '#ff2020',
-    'circle-stroke-color': '#ffffff',
-    'circle-stroke-width': 1.5
-  }
-});
+      id: 'utrecht-point',
+      type: 'circle',
+      source: 'utrecht-hub',
+      paint: {
+        'circle-radius': 10,
+        'circle-color': '#ff0000',
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 2.5
+      }
+    });
 
     map.addLayer({
       id: 'utrecht-label',
@@ -217,7 +213,7 @@
       layout: {
         'text-field': 'UTRECHT',
         'text-size': 12,
-        'text-offset': [0, 1.5],
+        'text-offset': [0, 2.2],
         'text-anchor': 'top',
         'text-font': ['Open Sans Bold']
       },
@@ -228,7 +224,7 @@
       }
     });
 
-    /* Blauwe route */
+    /* Blauwe neonroute */
     map.addSource('route', {
       type: 'geojson',
       data: {
@@ -272,9 +268,10 @@
       }
     });
 
-    /* Bewegend JBJ-bolletje */
+    /* Klein bewegend bolletje met Bulgaarse vlag en JBJ */
     const markerElement = document.createElement('div');
     markerElement.className = 'jbj-marker';
+
     markerElement.innerHTML = `
       <div class="flag">
         <div class="flag-white"></div>
@@ -291,7 +288,7 @@
       .setLngLat(utrecht)
       .addTo(map);
 
-    /* Afstand tussen twee GPS-punten */
+    /* Afstand tussen GPS-punten */
     function distance(a, b) {
       const R = 6371000;
       const rad = Math.PI / 180;
@@ -330,7 +327,7 @@
       return data.routes[0].geometry.coordinates;
     }
 
-    /* Beweging over de route */
+    /* Animatie over de weg */
     function animateRoute(coordinates, duration) {
       return new Promise(resolve => {
         const distances = [0];
@@ -360,6 +357,7 @@
           const targetDistance = progress * totalDistance;
 
           let index = 1;
+
           while (
             index < distances.length - 1 &&
             distances[index] < targetDistance
@@ -410,11 +408,10 @@
       });
 
       movingMarker.setLngLat(start);
-
       await animateRoute(coordinates, 12000);
     }
 
-    /* Willekeurige Europese stad kiezen */
+    /* Willekeurige stad kiezen en terugkeren */
     async function startJourney() {
       while (true) {
         const destination =
@@ -427,8 +424,10 @@
           await new Promise(resolve =>
             setTimeout(resolve, 1500)
           );
+
         } catch (error) {
           console.log('Route opnieuw proberen:', error);
+
           await new Promise(resolve =>
             setTimeout(resolve, 5000)
           );
