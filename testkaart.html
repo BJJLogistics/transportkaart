@@ -1,496 +1,443 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>European Road Transport - JBJ</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JBJ European Road Transport</title>
 
-<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
-<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+  <link
+    href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css"
+    rel="stylesheet"
+  />
+  <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
 
-<style>
-body {
-  margin: 0;
-  background: #061629;
-  color: white;
-  font-family: Arial, sans-serif;
-}
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #06111e;
+      font-family: Arial, sans-serif;
+    }
 
-header {
-  padding: 18px;
-  text-align: center;
-  background: #061629;
-  border-bottom: 1px solid #008cff;
-}
+    #map {
+      width: 100%;
+      height: 100%;
+    }
 
-h2 {
-  margin: 0;
-  color: #00cfff;
-  letter-spacing: 2px;
-}
+    /* Compact bewegend JBJ-bolletje */
+    .jbj-marker {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #00dfff;
+      box-sizing: border-box;
+      box-shadow:
+        0 0 8px #00dfff,
+        0 0 17px rgba(0, 191, 255, 0.65);
+      background: #061629;
+    }
 
-#map {
-  width: 100%;
-  height: 75vh;
-  background: #061629;
-}
+    /* Bulgaarse vlag */
+    .flag {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+    }
 
-/* Moving JBJ vehicle */
+    .flag-white {
+      flex: 1;
+      background: white;
+    }
 
-.jbj-marker {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 2px solid #00dfff;
-  box-shadow:
-    0 0 10px #00dfff,
-    0 0 25px #00bfff,
-    0 0 40px rgba(0, 191, 255, 0.7);
-  background: #061629;
-  box-sizing: border-box;
-}
+    .flag-green {
+      flex: 1;
+      background: #00966e;
+    }
 
-.flag {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-}
+    .flag-red {
+      flex: 1;
+      background: #d62612;
+    }
 
-.flag-white {
-  flex: 1;
-  background: #ffffff;
-}
-
-.flag-green {
-  flex: 1;
-  background: #168b45;
-}
-
-.flag-red {
-  flex: 1;
-  background: #d62632;
-}
-
-.jbj-text {
-  position: absolute;
-  z-index: 2;
-  color: white;
-  background: rgba(3, 17, 30, 0.88);
-  font-weight: bold;
- font-size: 13px;
-  letter-spacing: 1px;
-  padding: 3px 5px;
-  border-radius: 4px;
-  text-shadow: 0 0 5px #00dfff;
-}
-</style>
+    /* Klein zwart vlak met JBJ */
+    .jbj-text {
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      background: rgba(0, 0, 0, 0.92);
+      font-weight: bold;
+      font-size: 10px;
+      letter-spacing: 0.3px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      white-space: nowrap;
+      text-shadow: 0 0 3px #00dfff;
+    }
+  </style>
 </head>
 
 <body>
-
-<header>
-<h2>EUROPEAN ROAD TRANSPORT</h2>
-<div>INTERNATIONAL LOGISTICS NETWORK</div>
-</header>
-
 <div id="map"></div>
 
 <script>
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.openfreemap.org/styles/fiord',
+    center: [10, 51.5],
+    zoom: 3.7,
+    minZoom: 2
+  });
 
-const HUB = [5.12, 52.09];
+  map.addControl(new maplibregl.NavigationControl());
 
-const cities = [
-  ['London',-0.1276,51.5072],
-  ['Paris',2.3522,48.8566],
-  ['Brussels',4.3517,50.8503],
-  ['Amsterdam',4.9041,52.3676],
-  ['Berlin',13.405,52.52],
-  ['Hamburg',9.9937,53.5511],
-  ['Frankfurt',8.6821,50.1109],
-  ['Madrid',-3.7038,40.4168],
-  ['Barcelona',2.1734,41.3851],
-  ['Lisbon',-9.1393,38.7223],
-  ['Milan',9.19,45.4642],
-  ['Rome',12.4964,41.9028],
-  ['Vienna',16.3738,48.2082],
-  ['Warsaw',21.0122,52.2297],
-  ['Prague',14.4378,50.0755],
-  ['Copenhagen',12.5683,55.6761],
-  ['Stockholm',18.0686,59.3293],
-  ['Bucharest',26.1025,44.4268],
-  ['Sofia',23.3219,42.6977],
-  ['Athens',23.7275,37.9838],
-  ['Istanbul',28.9784,41.0082]
-];
+  const utrecht = [5.1214, 52.0907];
 
-const map = new maplibregl.Map({
-  container: 'map',
-  style: 'https://tiles.openfreemap.org/styles/fiord',
-  center: [10, 51.5],
-  zoom: 3.7
-});
+  const cities = [
+    { name: "Amsterdam", coordinates: [4.9041, 52.3676] },
+    { name: "Rotterdam", coordinates: [4.4777, 51.9244] },
+    { name: "Brussels", coordinates: [4.3517, 50.8503] },
+    { name: "Paris", coordinates: [2.3522, 48.8566] },
+    { name: "London", coordinates: [-0.1276, 51.5072] },
+    { name: "Berlin", coordinates: [13.4050, 52.5200] },
+    { name: "Hamburg", coordinates: [9.9937, 53.5511] },
+    { name: "Copenhagen", coordinates: [12.5683, 55.6761] },
+    { name: "Prague", coordinates: [14.4378, 50.0755] },
+    { name: "Vienna", coordinates: [16.3738, 48.2082] },
+    { name: "Zurich", coordinates: [8.5417, 47.3769] },
+    { name: "Milan", coordinates: [9.1900, 45.4642] },
+    { name: "Rome", coordinates: [12.4964, 41.9028] },
+    { name: "Barcelona", coordinates: [2.1734, 41.3851] },
+    { name: "Madrid", coordinates: [-3.7038, 40.4168] },
+    { name: "Lyon", coordinates: [4.8357, 45.7640] },
+    { name: "Munich", coordinates: [11.5820, 48.1351] },
+    { name: "Warsaw", coordinates: [21.0122, 52.2297] },
+    { name: "Budapest", coordinates: [19.0402, 47.4979] },
+    { name: "Sofia", coordinates: [23.3219, 42.6977] },
+    { name: "Belgrade", coordinates: [20.4489, 44.7866] }
+  ];
 
-map.addControl(new maplibregl.NavigationControl());
+  map.on('load', () => {
 
-map.on('load', function() {
-
-  // UTRECHT HUB - RED NEON
-
-  map.addSource('hub', {
-    type: 'geojson',
-    data: {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: HUB
+    /* Europese steden */
+    map.addSource('cities', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: cities.map(city => ({
+          type: 'Feature',
+          properties: { name: city.name },
+          geometry: {
+            type: 'Point',
+            coordinates: city.coordinates
+          }
+        }))
       }
-    }
-  });
+    });
 
-  map.addLayer({
-    id: 'hub-glow',
-    type: 'circle',
-    source: 'hub',
-    paint: {
-      'circle-radius': 25,
-      'circle-color': '#ff2020',
-      'circle-opacity': 0.35,
-      'circle-blur': 1
-    }
-  });
+    map.addLayer({
+      id: 'city-points',
+      type: 'circle',
+      source: 'cities',
+      paint: {
+        'circle-radius': 4,
+        'circle-color': '#00eaff',
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1,
+        'circle-blur': 0.15
+      }
+    });
 
-  map.addLayer({
-    id: 'hub-point',
-    type: 'circle',
-    source: 'hub',
-    paint: {
-      'circle-radius': 12,
-      'circle-color': '#ff2020',
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 3
-    }
-  });
+    map.addLayer({
+      id: 'city-labels',
+      type: 'symbol',
+      source: 'cities',
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-size': 11,
+        'text-offset': [0, 1.2],
+        'text-anchor': 'top'
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-halo-color': '#06111e',
+        'text-halo-width': 1.5
+      }
+    });
 
-  // CITIES
-
-  map.addSource('cities', {
-    type: 'geojson',
-    data: {
-      type: 'FeatureCollection',
-      features: cities.map(city => ({
+    /* Utrecht: kleinere rode hub */
+    map.addSource('utrecht-hub', {
+      type: 'geojson',
+      data: {
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: [city[1], city[2]]
+          coordinates: utrecht
         },
-        properties: {
-          name: city[0]
-        }
-      }))
-    }
-  });
-
-  map.addLayer({
-    id: 'city-glow',
-    type: 'circle',
-    source: 'cities',
-    paint: {
-      'circle-radius': 10,
-      'circle-color': '#00cfff',
-      'circle-opacity': 0.3,
-      'circle-blur': 1
-    }
-  });
-
-  map.addLayer({
-    id: 'city-points',
-    type: 'circle',
-    source: 'cities',
-    paint: {
-      'circle-radius': 4,
-      'circle-color': '#00cfff',
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1
-    }
-  });
-
-  map.addLayer({
-    id: 'city-labels',
-    type: 'symbol',
-    source: 'cities',
-    layout: {
-      'text-field': ['get', 'name'],
-      'text-size': 11,
-      'text-offset': [0, 1],
-      'text-anchor': 'top'
-    },
-    paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#061629',
-      'text-halo-width': 2
-    }
-  });
-
-  // ROUTE SOURCE
-
-  map.addSource('route', {
-    type: 'geojson',
-    data: {
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: [HUB, HUB]
+        properties: {}
       }
-    }
-  });
+    });
 
-  map.addLayer({
-    id: 'route-glow',
-    type: 'line',
-    source: 'route',
-    paint: {
-      'line-color': '#00bfff',
-      'line-width': 12,
-      'line-opacity': 0.35,
-      'line-blur': 5
-    }
-  });
+    map.addLayer({
+      id: 'utrecht-glow',
+      type: 'circle',
+      source: 'utrecht-hub',
+      paint: {
+        'circle-radius': 15,
+        'circle-color': '#ff2020',
+        'circle-opacity': 0.22,
+        'circle-blur': 0.8
+      }
+    });
 
-  map.addLayer({
-    id: 'route-line',
-    type: 'line',
-    source: 'route',
-    paint: {
-      'line-color': '#00dfff',
-      'line-width': 3,
-      'line-opacity': 1
-    }
-  });
+    map.addLayer({
+      id: 'utrecht-point',
+      type: 'circle',
+      source: 'utrecht-hub',
+      paint: {
+        'circle-radius': 8,
+        'circle-color': '#ff2020',
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.5
+      }
+    });
 
-  // JBJ MOVING MARKER
+    map.addLayer({
+      id: 'utrecht-label',
+      type: 'symbol',
+      source: 'utrecht-hub',
+      layout: {
+        'text-field': 'UTRECHT',
+        'text-size': 12,
+        'text-offset': [0, 1.5],
+        'text-anchor': 'top',
+        'text-font': ['Open Sans Bold']
+      },
+      paint: {
+        'text-color': '#ff5555',
+        'text-halo-color': '#06111e',
+        'text-halo-width': 2
+      }
+    });
 
-  const markerElement = document.createElement('div');
-  markerElement.className = 'jbj-marker';
+    /* Blauwe route */
+    map.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: []
+        },
+        properties: {}
+      }
+    });
 
-  markerElement.innerHTML = `
-    <div class="flag">
-      <div class="flag-white"></div>
-      <div class="flag-green"></div>
-      <div class="flag-red"></div>
-    </div>
-    <div class="jbj-text">JBJ</div>
-  `;
+    map.addLayer({
+      id: 'route-glow',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
+      paint: {
+        'line-color': '#008cff',
+        'line-width': 9,
+        'line-opacity': 0.25,
+        'line-blur': 3
+      }
+    });
 
-  const jbjMarker = new maplibregl.Marker({
-    element: markerElement,
-    anchor: 'center'
-  })
-  .setLngLat(HUB)
-  .addTo(map);
+    map.addLayer({
+      id: 'route-line',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
+      paint: {
+        'line-color': '#00bfff',
+        'line-width': 2.5,
+        'line-opacity': 0.95
+      }
+    });
 
-  // RANDOM CITY
+    /* Bewegend JBJ-bolletje */
+    const markerElement = document.createElement('div');
+    markerElement.className = 'jbj-marker';
+    markerElement.innerHTML = `
+      <div class="flag">
+        <div class="flag-white"></div>
+        <div class="flag-green"></div>
+        <div class="flag-red"></div>
+      </div>
+      <div class="jbj-text">JBJ</div>
+    `;
 
-  let lastCity = -1;
+    const movingMarker = new maplibregl.Marker({
+      element: markerElement,
+      anchor: 'center'
+    })
+      .setLngLat(utrecht)
+      .addTo(map);
 
-  function chooseCity() {
-    let index;
+    /* Afstand tussen twee GPS-punten */
+    function distance(a, b) {
+      const R = 6371000;
+      const rad = Math.PI / 180;
+      const lat1 = a[1] * rad;
+      const lat2 = b[1] * rad;
+      const dLat = (b[1] - a[1]) * rad;
+      const dLon = (b[0] - a[0]) * rad;
 
-    do {
-      index = Math.floor(Math.random() * cities.length);
-    } while (index === lastCity);
+      const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) *
+        Math.sin(dLon / 2) ** 2;
 
-    lastCity = index;
-    return cities[index];
-  }
-
-  // ROAD ROUTE FROM OSRM
-
-  async function getRoadRoute(start, end) {
-
-    const url =
-      'https://router.project-osrm.org/route/v1/driving/' +
-      start[0] + ',' + start[1] + ';' +
-      end[0] + ',' + end[1] +
-      '?overview=full&geometries=geojson&steps=false';
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error('Route server error');
-    }
-
-    const data = await response.json();
-
-    if (data.code !== 'Ok' || !data.routes.length) {
-      throw new Error('No road route found');
-    }
-
-    return data.routes[0].geometry.coordinates;
-  }
-
-  // DISTANCE
-
-  function distance(a, b) {
-
-    const rad = Math.PI / 180;
-
-    const lat1 = a[1] * rad;
-    const lat2 = b[1] * rad;
-
-    const dLat = (b[1] - a[1]) * rad;
-    const dLng = (b[0] - a[0]) * rad;
-
-    const x = Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1) * Math.cos(lat2) *
-      Math.sin(dLng / 2) ** 2;
-
-    return 6371000 * 2 *
-      Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-  }
-
-  // MOVE ALONG ROAD
-
-  function animateRoad(coordinates, callback) {
-
-    const lengths = [];
-    let totalDistance = 0;
-
-    for (let i = 1; i < coordinates.length; i++) {
-
-      const segment = distance(
-        coordinates[i - 1],
-        coordinates[i]
-      );
-
-      lengths.push(segment);
-      totalDistance += segment;
-    }
-
-    if (totalDistance === 0) {
-      callback();
-      return;
+      return 2 * R * Math.asin(Math.sqrt(h));
     }
 
-    const duration = 10000;
-    const startTime = performance.now();
+    /* Echte autoroute ophalen */
+    async function getRoadRoute(start, end) {
+      const url =
+        'https://router.project-osrm.org/route/v1/driving/' +
+        start.join(',') + ';' + end.join(',') +
+        '?overview=full&geometries=geojson';
 
-    function frame(now) {
+      const response = await fetch(url);
 
-      const progress = Math.min(
-        (now - startTime) / duration, 1
-      );
+      if (!response.ok) {
+        throw new Error('Route niet beschikbaar');
+      }
 
-      const travelled = totalDistance * progress;
+      const data = await response.json();
 
-      let currentDistance = 0;
-      let position = coordinates[coordinates.length - 1];
+      if (!data.routes || !data.routes.length) {
+        throw new Error('Geen route gevonden');
+      }
 
-      for (let i = 0; i < lengths.length; i++) {
+      return data.routes[0].geometry.coordinates;
+    }
 
-        if (currentDistance + lengths[i] >= travelled) {
+    /* Beweging over de route */
+    function animateRoute(coordinates, duration) {
+      return new Promise(resolve => {
+        const distances = [0];
+        let totalDistance = 0;
 
-          const fraction =
-            (travelled - currentDistance) / lengths[i];
+        for (let i = 1; i < coordinates.length; i++) {
+          totalDistance += distance(
+            coordinates[i - 1],
+            coordinates[i]
+          );
+          distances.push(totalDistance);
+        }
 
-          const a = coordinates[i];
-          const b = coordinates[i + 1];
+        if (totalDistance === 0) {
+          resolve();
+          return;
+        }
 
-          position = [
-            a[0] + (b[0] - a[0]) * fraction,
-            a[1] + (b[1] - a[1]) * fraction
+        const startTime = performance.now();
+
+        function frame(now) {
+          const progress = Math.min(
+            (now - startTime) / duration,
+            1
+          );
+
+          const targetDistance = progress * totalDistance;
+
+          let index = 1;
+          while (
+            index < distances.length - 1 &&
+            distances[index] < targetDistance
+          ) {
+            index++;
+          }
+
+          const segmentStart = distances[index - 1];
+          const segmentEnd = distances[index];
+          const segmentLength = segmentEnd - segmentStart;
+
+          const part = segmentLength === 0
+            ? 0
+            : (targetDistance - segmentStart) / segmentLength;
+
+          const a = coordinates[index - 1];
+          const b = coordinates[index];
+
+          const position = [
+            a[0] + (b[0] - a[0]) * part,
+            a[1] + (b[1] - a[1]) * part
           ];
 
-          break;
+          movingMarker.setLngLat(position);
+
+          if (progress < 1) {
+            requestAnimationFrame(frame);
+          } else {
+            resolve();
+          }
         }
 
-        currentDistance += lengths[i];
-      }
-
-      jbjMarker.setLngLat(position);
-
-      if (progress < 1) {
         requestAnimationFrame(frame);
-      } else {
-        callback();
-      }
+      });
     }
 
-    requestAnimationFrame(frame);
-  }
-
-  // JOURNEY
-
-  async function startJourney() {
-
-    const city = chooseCity();
-    const destination = [city[1], city[2]];
-
-    console.log('Route naar: ' + city[0]);
-
-    try {
-
-      const road = await getRoadRoute(HUB, destination);
+    /* Route tonen en rijden */
+    async function travel(start, end) {
+      const coordinates = await getRoadRoute(start, end);
 
       map.getSource('route').setData({
         type: 'Feature',
         geometry: {
           type: 'LineString',
-          coordinates: road
-        }
+          coordinates: coordinates
+        },
+        properties: {}
       });
 
-      animateRoad(road, function() {
+      movingMarker.setLngLat(start);
 
-        console.log('Aangekomen in: ' + city[0]);
-
-        setTimeout(function() {
-
-          const returnRoad = [...road].reverse();
-
-          map.getSource('route').setData({
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: returnRoad
-            }
-          });
-
-          animateRoad(returnRoad, function() {
-
-            console.log('Terug in Utrecht');
-
-            setTimeout(startJourney, 1500);
-
-          });
-
-        }, 1500);
-
-      });
-
-    } catch (error) {
-
-      console.error('Route fout:', error);
-
-      setTimeout(startJourney, 10000);
+      await animateRoute(coordinates, 12000);
     }
-  }
 
-  console.log('JBJ European Road Transport gestart');
+    /* Willekeurige Europese stad kiezen */
+    async function startJourney() {
+      while (true) {
+        const destination =
+          cities[Math.floor(Math.random() * cities.length)];
 
-  startJourney();
+        try {
+          await travel(utrecht, destination.coordinates);
+          await travel(destination.coordinates, utrecht);
 
-});
+          await new Promise(resolve =>
+            setTimeout(resolve, 1500)
+          );
+        } catch (error) {
+          console.log('Route opnieuw proberen:', error);
+          await new Promise(resolve =>
+            setTimeout(resolve, 5000)
+          );
+        }
+      }
+    }
 
+    startJourney();
+  });
 </script>
-
 </body>
 </html>
